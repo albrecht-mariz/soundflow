@@ -1,6 +1,6 @@
 # SoundFlow Data Pipeline
 
-An end-to-end batch data pipeline that simulates a music streaming service. Built for educational and portfolio purposes.
+An end-to-end batch data pipeline that simulates a music streaming service. 
 
 ## Stack
 
@@ -11,10 +11,18 @@ An end-to-end batch data pipeline that simulates a music streaming service. Buil
 | Storage | DuckDB | Analytical database (file-based) |
 | Transformation | dbt | Staging → Intermediate → Marts |
 | Orchestration | GitHub Actions | Daily cron, artifact persistence |
+| Development | Claude Code | AI-assisted development (Anthropic) |
 
 ## Architecture
 
 ```
+┌──────────────────────────┐
+│   bulk_backfill.py       │  One-time historical load (months of data)
+│                          │  Same deterministic seed as mock API
+│                          │  Writes direct to DuckDB (no HTTP overhead)
+└────────────┬─────────────┘
+             │ direct write
+             ▼
 ┌──────────────────────────┐
 │   SoundFlow Mock API     │  FastAPI · deterministic daily data
 │   (FastAPI + Faker)      │  100 users · 1K tracks · ~4K–8.5K events/day
@@ -22,8 +30,8 @@ An end-to-end batch data pipeline that simulates a music streaming service. Buil
              │ HTTP (REST)
              ▼
 ┌──────────────────────────┐
-│   dlt Pipeline           │  Incremental load (events by date)
-│   (Python)               │  Merge upsert (users, tracks, artists)
+│   dlt Pipeline           │  Daily incremental load (events by date)
+│   (Python)               │  Replace (reference data) · Append (events)
 └────────────┬─────────────┘
              │
              ▼
@@ -35,9 +43,9 @@ An end-to-end batch data pipeline that simulates a music streaming service. Buil
              ▼
 ┌──────────────────────────┐
 │   dbt Transformations    │
-│                          │  staging/    → typed, renamed
+│                          │  staging/      → typed, renamed
 │                          │  intermediate/ → joined enriched events
-│                          │  marts/      → analytics-ready tables
+│                          │  marts/        → analytics-ready tables
 └────────────┬─────────────┘
              │
              ▼
@@ -50,7 +58,7 @@ An end-to-end batch data pipeline that simulates a music streaming service. Buil
              ▲
 GitHub Actions (daily 06:00 UTC)
   · Downloads previous DuckDB artifact
-  · Appends new day's events
+  · Appends new day's events via dlt
   · Runs dbt models + tests
   · Uploads updated DuckDB artifact
 ```
@@ -140,11 +148,23 @@ make dbt-test
 make docker-up
 ```
 
-### 6. Backfill historical data (e.g. last 30 days)
+### 6. Backfill historical data
+
+For large historical loads (weeks or months), use the bulk backfill script directly — it writes to DuckDB without going through the API, which is significantly faster:
+
+```bash
+python bulk_backfill.py --start-date 2025-01-01 --end-date 2025-12-31
+```
+
+Or via Make (defaults to yesterday if `END_DATE` is omitted):
 
 ```bash
 make backfill START_DATE=2025-01-01
 ```
+
+The backfill script generates data using the same deterministic Faker seed as the mock API, so the data is identical to what the dlt pipeline would produce. After backfilling, run the dlt pipeline once to append the most recent day, then run dbt.
+
+> **Note**: The backfill script writes reference data (artists, albums, tracks, users) and events directly into the `raw` schema using the same schema as dlt — including `_dlt_load_id` and `_dlt_id` columns — so subsequent dlt runs are fully compatible.
 
 ### 7. Explore the data
 
@@ -205,8 +225,22 @@ soundflow-pipeline/
 ├── dbt_project/            # dbt transformation project
 │   ├── models/
 │   │   ├── staging/        # Typed/renamed raw sources
+│   │   │   ├── sources.yml
+│   │   │   ├── schema.yml
+│   │   │   └── stg_*.sql
 │   │   ├── intermediate/   # Joined enriched events
+│   │   │   ├── schema.yml
+│   │   │   └── int_enriched_events.sql
 │   │   └── marts/          # Analytics-ready tables
+│   │       ├── schema.yml
+│   │       └── *.sql
+│   ├── tests/              # Custom singular tests
+│   │   ├── assert_completion_rate_valid.sql
+│   │   ├── assert_skip_rate_valid.sql
+│   │   ├── assert_top_tracks_rank_range.sql
+│   │   └── assert_genre_pct_sums_to_100.sql
+│   ├── macros/
+│   │   └── generate_schema_name.sql
 │   ├── dbt_project.yml
 │   ├── profiles.yml
 │   ├── packages.yml
@@ -217,14 +251,15 @@ soundflow-pipeline/
 │       └── ci.yml
 ├── docker-compose.yml
 ├── Makefile
-├── validate_patterns.py    # validates simulated data patterns against DuckDB
+├── bulk_backfill.py        # Fast historical backfill (bypasses API, writes direct to DuckDB)
+├── validate_patterns.py    # Validates simulated data patterns against DuckDB
 └── README.md
 ```
 
 ## Key Design Decisions
 
 - **Deterministic data**: All mock data is seeded — same inputs, same outputs. This makes the pipeline idempotent and testable.
-- **Incremental loading**: Stream events are appended daily using dlt's incremental cursor on `started_at`. Reference data (users, tracks, artists) uses merge/upsert.
+- **Incremental loading**: Stream events are appended daily by the dlt pipeline using a date-range loop — each run fetches events from the configured start date up to yesterday and appends them. Reference data (artists, albums, tracks, users) is replaced on each run (`write_disposition="replace"`).
 - **DuckDB as artifact**: No cloud infrastructure needed. The DuckDB file travels between GitHub Actions runs as an artifact, accumulating data over time.
 - **dbt layers**: Staging (clean), Intermediate (joined), Marts (aggregated) — standard dbt layering pattern.
 - **No secrets required**: The entire pipeline runs without API keys or cloud credentials.
