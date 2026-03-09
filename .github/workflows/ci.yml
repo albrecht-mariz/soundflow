@@ -91,7 +91,7 @@ jobs:
         working-directory: dbt_project
         env:
           DUCKDB_PATH: "../soundflow.duckdb"
-        run: dbt docs generate --target dev --profiles-dir .
+        run: dbt docs generate --target prod --profiles-dir .
 
       - name: Publish dbt docs to GitHub Pages
         if: github.ref == 'refs/heads/main'

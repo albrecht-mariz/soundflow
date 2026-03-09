@@ -271,5 +271,5 @@ soundflow-pipeline/
 - **Vectorised event generation**: `bulk_backfill.py` uses NumPy for all random draws (user/track selection, timestamps, listen ratios) in batch rather than per-event Python loops — ~10–50× faster than the equivalent pure-Python approach.
 - **dbt singular tests**: Custom SQL assertion tests (in `dbt_project/tests/`) validate business logic — e.g. completion rates must be 0–100%, daily rank must be 1–100. These complement dbt's built-in schema tests (`not_null`, `unique`, `accepted_values`).
 - **dbt_utils package**: Uses `dbt-labs/dbt_utils` for utility macros (e.g. `generate_surrogate_key`).
-- **Custom schema macro**: `generate_schema_name.sql` overrides dbt's default schema naming so models land in `raw`/`staging`/`marts` rather than `<target>_<schema>` — keeps the DuckDB schema layout clean.
+- **Dev/prod schema separation**: Two dbt targets in `profiles.yml` (`dev` and `prod`) write to different DuckDB schemas. In `prod`, models land in `raw`/`staging`/`marts`. In `dev`, they land in `dev_raw`/`dev_staging`/`dev_marts` — so local development never pollutes the production dataset. The `generate_schema_name.sql` macro enforces this via `target.name`.
 - **Linting in CI**: Python files are linted with `ruff` (fast, replaces flake8/isort); SQL models and tests are linted with `sqlfluff` using the DuckDB dialect and Jinja templater.
