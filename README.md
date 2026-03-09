@@ -122,7 +122,21 @@ python validate_patterns.py
 make setup
 ```
 
-### 2. Start the mock API
+### 2. Backfill historical data
+
+Load months of historical data directly into DuckDB — this bypasses the API for speed and is the right starting point before running the daily pipeline:
+
+```bash
+make backfill START_DATE=2025-01-01
+# or with an explicit end date:
+python bulk_backfill.py --start-date 2025-01-01 --end-date 2025-12-31
+```
+
+The backfill generates data using the same deterministic seed as the mock API, so it's fully compatible with subsequent dlt runs.
+
+> **Note**: The backfill writes reference data (artists, albums, tracks, users) and events directly into `raw` — including `_dlt_load_id` and `_dlt_id` columns — so subsequent dlt pipeline runs append cleanly on top.
+
+### 3. Start the mock API
 
 ```bash
 make api
@@ -130,42 +144,26 @@ make api
 # Interactive docs: http://localhost:8000/docs
 ```
 
-### 3. Run the pipeline (yesterday's data)
+### 4. Run the pipeline (yesterday's data)
+
+Once the API is running, append the most recent day:
 
 ```bash
 make pipeline
 ```
 
-### 4. Run dbt transformations
+### 5. Run dbt transformations
 
 ```bash
 make dbt
 make dbt-test
 ```
 
-### 5. Or run everything with Docker Compose
+### 6. Or run everything with Docker Compose
 
 ```bash
 make docker-up
 ```
-
-### 6. Backfill historical data
-
-For large historical loads (weeks or months), use the bulk backfill script directly — it writes to DuckDB without going through the API, which is significantly faster:
-
-```bash
-python bulk_backfill.py --start-date 2025-01-01 --end-date 2025-12-31
-```
-
-Or via Make (defaults to yesterday if `END_DATE` is omitted):
-
-```bash
-make backfill START_DATE=2025-01-01
-```
-
-The backfill script generates data using the same deterministic Faker seed as the mock API, so the data is identical to what the dlt pipeline would produce. After backfilling, run the dlt pipeline once to append the most recent day, then run dbt.
-
-> **Note**: The backfill script writes reference data (artists, albums, tracks, users) and events directly into the `raw` schema using the same schema as dlt — including `_dlt_load_id` and `_dlt_id` columns — so subsequent dlt runs are fully compatible.
 
 ### 7. Explore the data
 
