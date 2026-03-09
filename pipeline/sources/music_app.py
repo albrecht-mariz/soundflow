@@ -6,7 +6,7 @@ Implements paginated REST calls for each resource:
   - albums    (full refresh / merge)
   - tracks    (full refresh / merge)
   - users     (full refresh / merge)
-  - events    (incremental append by date)
+  - events    (incremental merge by date, deduplicates on event_id)
 """
 
 from datetime import date, timedelta
@@ -75,7 +75,7 @@ def soundflow_source(
         for page_data in _paginate(f"{base}/users", {}):
             yield page_data
 
-    @dlt.resource(name="stream_events", write_disposition="append", primary_key="event_id")
+    @dlt.resource(name="stream_events", write_disposition="merge", primary_key="event_id")
     def stream_events():
         """Load stream events day by day from start_date up to yesterday."""
         yesterday = date.today() - timedelta(days=1)
