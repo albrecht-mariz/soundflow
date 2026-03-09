@@ -67,6 +67,10 @@ jobs:
         working-directory: dbt_project
         run: dbt deps
 
+      - name: Lint SQL files
+        working-directory: dbt_project
+        run: sqlfluff lint models/ tests/
+
       - name: Run dbt models
         working-directory: dbt_project
         env:
