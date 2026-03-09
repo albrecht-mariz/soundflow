@@ -92,6 +92,7 @@ The mock API generates data with realistic behavioural patterns built in:
 | **Track 80/20** | Top 20% of tracks capture ~80% of streams (Zipf distribution, α=1.0) |
 | **Artist 80/20** | Popular artists attract more tracks during catalog generation, so they also capture a disproportionate share of streams |
 | **User growth** | Event volume starts at 30% on Jan 1 2025 and grows linearly to 100% over 18 months, simulating an expanding user base |
+| **Daily active user pool** | Only a realistic subset of users (~50–80) is active each day. Popular users have higher activation probability; quiet days (summer Mondays) have fewer active users than busy days (Christmas Saturdays) |
 
 These patterns can be verified after a pipeline run:
 
@@ -185,6 +186,10 @@ make dbt-docs
 # Opens browser at http://localhost:8080
 ```
 
+The docs include an interactive lineage graph (DAG) showing the full source → staging → intermediate → marts dependency chain. They are also published automatically to GitHub Pages on every push to `main`:
+
+**[albrecht-mariz.github.io/soundflow](https://albrecht-mariz.github.io/soundflow)**
+
 ## GitHub Actions
 
 Two workflows are included:
@@ -263,3 +268,8 @@ soundflow-pipeline/
 - **DuckDB as artifact**: No cloud infrastructure needed. The DuckDB file travels between GitHub Actions runs as an artifact, accumulating data over time.
 - **dbt layers**: Staging (clean), Intermediate (joined), Marts (aggregated) — standard dbt layering pattern.
 - **No secrets required**: The entire pipeline runs without API keys or cloud credentials.
+- **Vectorised event generation**: `bulk_backfill.py` uses NumPy for all random draws (user/track selection, timestamps, listen ratios) in batch rather than per-event Python loops — ~10–50× faster than the equivalent pure-Python approach.
+- **dbt singular tests**: Custom SQL assertion tests (in `dbt_project/tests/`) validate business logic — e.g. completion rates must be 0–100%, daily rank must be 1–100. These complement dbt's built-in schema tests (`not_null`, `unique`, `accepted_values`).
+- **dbt_utils package**: Uses `dbt-labs/dbt_utils` for utility macros (e.g. `generate_surrogate_key`).
+- **Custom schema macro**: `generate_schema_name.sql` overrides dbt's default schema naming so models land in `raw`/`staging`/`marts` rather than `<target>_<schema>` — keeps the DuckDB schema layout clean.
+- **Linting in CI**: Python files are linted with `ruff` (fast, replaces flake8/isort); SQL models and tests are linted with `sqlfluff` using the DuckDB dialect and Jinja templater.
