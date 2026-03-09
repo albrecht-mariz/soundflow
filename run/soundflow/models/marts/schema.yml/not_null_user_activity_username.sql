@@ -14,7 +14,7 @@
 
 
 select username
-from "soundflow"."marts"."user_activity"
+from "soundflow"."dev_marts"."user_activity"
 where username is null
 
 

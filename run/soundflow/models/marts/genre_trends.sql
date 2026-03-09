@@ -4,7 +4,7 @@
     
 
     create  table
-      "soundflow"."marts"."genre_trends__dbt_tmp"
+      "soundflow"."dev_marts"."genre_trends__dbt_tmp"
   
     as (
       /*
@@ -13,7 +13,7 @@
 */
 
 WITH events AS (
-    SELECT * FROM "soundflow"."intermediate"."int_enriched_events"
+    SELECT * FROM "soundflow"."dev_intermediate"."int_enriched_events"
 ),
 
 genre_day AS (

@@ -17,7 +17,7 @@ with all_values as (
         device_type as value_field,
         count(*) as n_records
 
-    from "soundflow"."staging"."stg_stream_events"
+    from "soundflow"."dev_staging"."stg_stream_events"
     group by device_type
 
 )

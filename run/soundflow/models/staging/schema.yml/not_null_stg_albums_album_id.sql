@@ -14,7 +14,7 @@
 
 
 select album_id
-from "soundflow"."staging"."stg_albums"
+from "soundflow"."dev_staging"."stg_albums"
 where album_id is null
 
 

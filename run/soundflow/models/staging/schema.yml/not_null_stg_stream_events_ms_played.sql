@@ -14,7 +14,7 @@
 
 
 select ms_played
-from "soundflow"."staging"."stg_stream_events"
+from "soundflow"."dev_staging"."stg_stream_events"
 where ms_played is null
 
 

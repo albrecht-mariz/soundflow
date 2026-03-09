@@ -14,7 +14,7 @@
 
 
 select genre
-from "soundflow"."staging"."stg_tracks"
+from "soundflow"."dev_staging"."stg_tracks"
 where genre is null
 
 

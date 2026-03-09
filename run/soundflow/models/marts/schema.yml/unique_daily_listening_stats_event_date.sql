@@ -15,7 +15,7 @@ select
     event_date as unique_field,
     count(*) as n_records
 
-from "soundflow"."marts"."daily_listening_stats"
+from "soundflow"."dev_marts"."daily_listening_stats"
 where event_date is not null
 group by event_date
 having count(*) > 1

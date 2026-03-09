@@ -17,7 +17,7 @@ with all_values as (
         age_group as value_field,
         count(*) as n_records
 
-    from "soundflow"."staging"."stg_users"
+    from "soundflow"."dev_staging"."stg_users"
     group by age_group
 
 )

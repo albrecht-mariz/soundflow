@@ -14,7 +14,7 @@
 
 
 select device_type
-from "soundflow"."staging"."stg_stream_events"
+from "soundflow"."dev_staging"."stg_stream_events"
 where device_type is null
 
 

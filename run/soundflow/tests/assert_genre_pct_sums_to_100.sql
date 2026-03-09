@@ -13,7 +13,7 @@
 SELECT
     event_date,
     ROUND(SUM(pct_of_daily_streams), 0) AS total_pct
-FROM "soundflow"."marts"."genre_trends"
+FROM "soundflow"."dev_marts"."genre_trends"
 GROUP BY event_date
 HAVING ROUND(SUM(pct_of_daily_streams), 0) NOT BETWEEN 99 AND 101
   

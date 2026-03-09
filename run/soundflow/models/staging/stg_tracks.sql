@@ -1,6 +1,6 @@
 
   
-  create view "soundflow"."staging"."stg_tracks__dbt_tmp" as (
+  create view "soundflow"."dev_staging"."stg_tracks__dbt_tmp" as (
     WITH source AS (
     SELECT * FROM "soundflow"."raw"."tracks"
 ),

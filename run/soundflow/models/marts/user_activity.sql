@@ -4,7 +4,7 @@
     
 
     create  table
-      "soundflow"."marts"."user_activity__dbt_tmp"
+      "soundflow"."dev_marts"."user_activity__dbt_tmp"
   
     as (
       /*
@@ -13,11 +13,11 @@
 */
 
 WITH events AS (
-    SELECT * FROM "soundflow"."intermediate"."int_enriched_events"
+    SELECT * FROM "soundflow"."dev_intermediate"."int_enriched_events"
 ),
 
 users AS (
-    SELECT * FROM "soundflow"."staging"."stg_users"
+    SELECT * FROM "soundflow"."dev_staging"."stg_users"
 ),
 
 user_stats AS (

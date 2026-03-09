@@ -1,25 +1,25 @@
 
   
-  create view "soundflow"."intermediate"."int_enriched_events__dbt_tmp" as (
+  create view "soundflow"."dev_intermediate"."int_enriched_events__dbt_tmp" as (
     /*
   Enriched stream events — joins events with track, artist, and user dims.
   This is the main fact table used downstream by all mart models.
 */
 
 WITH events AS (
-    SELECT * FROM "soundflow"."staging"."stg_stream_events"
+    SELECT * FROM "soundflow"."dev_staging"."stg_stream_events"
 ),
 
 tracks AS (
-    SELECT * FROM "soundflow"."staging"."stg_tracks"
+    SELECT * FROM "soundflow"."dev_staging"."stg_tracks"
 ),
 
 artists AS (
-    SELECT * FROM "soundflow"."staging"."stg_artists"
+    SELECT * FROM "soundflow"."dev_staging"."stg_artists"
 ),
 
 users AS (
-    SELECT * FROM "soundflow"."staging"."stg_users"
+    SELECT * FROM "soundflow"."dev_staging"."stg_users"
 ),
 
 enriched AS (

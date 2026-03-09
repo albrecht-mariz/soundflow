@@ -13,13 +13,13 @@
 
 with child as (
     select track_id as from_field
-    from "soundflow"."staging"."stg_stream_events"
+    from "soundflow"."dev_staging"."stg_stream_events"
     where track_id is not null
 ),
 
 parent as (
     select track_id as to_field
-    from "soundflow"."staging"."stg_tracks"
+    from "soundflow"."dev_staging"."stg_tracks"
 )
 
 select

@@ -14,7 +14,7 @@
 
 
 select user_id
-from "soundflow"."marts"."user_activity"
+from "soundflow"."dev_marts"."user_activity"
 where user_id is null
 
 

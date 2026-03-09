@@ -17,7 +17,7 @@ with all_values as (
         subscription_type as value_field,
         count(*) as n_records
 
-    from "soundflow"."marts"."user_activity"
+    from "soundflow"."dev_marts"."user_activity"
     group by subscription_type
 
 )

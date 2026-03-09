@@ -11,7 +11,7 @@
 -- Returns failing rows — zero rows = test passes.
 
 SELECT *
-FROM "soundflow"."marts"."top_tracks_daily"
+FROM "soundflow"."dev_marts"."top_tracks_daily"
 WHERE
     daily_rank < 1
     OR daily_rank > 100

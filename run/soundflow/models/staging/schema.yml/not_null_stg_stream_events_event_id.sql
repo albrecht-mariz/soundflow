@@ -14,7 +14,7 @@
 
 
 select event_id
-from "soundflow"."staging"."stg_stream_events"
+from "soundflow"."dev_staging"."stg_stream_events"
 where event_id is null
 
 
