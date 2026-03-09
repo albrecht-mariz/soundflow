@@ -262,7 +262,7 @@ soundflow-pipeline/
 ## Key Design Decisions
 
 - **Deterministic data**: All mock data is seeded — same inputs, same outputs. This makes the pipeline idempotent and testable.
-- **Incremental loading**: Stream events are appended daily by the dlt pipeline using a date-range loop — each run fetches events from the configured start date up to yesterday and appends them. Reference data (artists, albums, tracks, users) is replaced on each run (`write_disposition="replace"`).
+- **Incremental loading**: Stream events are loaded daily using `write_disposition="merge"` with `event_id` as the primary key — making the pipeline fully idempotent. Re-running for the same date range is safe; existing events are updated, not duplicated. Reference data (artists, albums, tracks, users) is replaced on each run (`write_disposition="replace"`).
 - **DuckDB as artifact**: No cloud infrastructure needed. The DuckDB file travels between GitHub Actions runs as an artifact, accumulating data over time.
 - **dbt layers**: Staging (clean), Intermediate (joined), Marts (aggregated) — standard dbt layering pattern.
 - **No secrets required**: The entire pipeline runs without API keys or cloud credentials.
