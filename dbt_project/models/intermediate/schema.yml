@@ -1,0 +1,25 @@
+version: 2
+
+models:
+  - name: int_enriched_events
+    description: >
+      Stream events enriched with track, artist, and user dimensions.
+      Central fact model used by all mart models.
+    columns:
+      - name: event_id
+        description: Unique event identifier.
+        data_tests: [unique, not_null]
+      - name: user_id
+        data_tests: [not_null]
+      - name: track_id
+        data_tests: [not_null]
+      - name: artist_id
+        data_tests: [not_null]
+      - name: event_date
+        data_tests: [not_null]
+      - name: ms_played
+        data_tests: [not_null]
+      - name: subscription_type
+        data_tests:
+          - accepted_values:
+              values: ["free", "premium", "family", "student"]

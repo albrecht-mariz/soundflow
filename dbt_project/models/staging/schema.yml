@@ -1,0 +1,109 @@
+version: 2
+
+models:
+  - name: stg_artists
+    description: Cleaned artist catalog from raw source.
+    columns:
+      - name: artist_id
+        description: Unique artist identifier.
+        data_tests: [unique, not_null]
+      - name: artist_name
+        data_tests: [not_null]
+      - name: genre
+        data_tests: [not_null]
+      - name: popularity_rank
+        data_tests: [not_null]
+
+  - name: stg_albums
+    description: Cleaned album catalog from raw source.
+    columns:
+      - name: album_id
+        description: Unique album identifier.
+        data_tests: [unique, not_null]
+      - name: artist_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_artists')
+              field: artist_id
+      - name: album_title
+        data_tests: [not_null]
+
+  - name: stg_tracks
+    description: Cleaned track catalog from raw source.
+    columns:
+      - name: track_id
+        description: Unique track identifier.
+        data_tests: [unique, not_null]
+      - name: artist_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_artists')
+              field: artist_id
+      - name: album_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_albums')
+              field: album_id
+      - name: track_title
+        data_tests: [not_null]
+      - name: genre
+        data_tests: [not_null]
+      - name: duration_ms
+        data_tests: [not_null]
+
+  - name: stg_users
+    description: Cleaned user accounts from raw source.
+    columns:
+      - name: user_id
+        description: Unique user identifier.
+        data_tests: [unique, not_null]
+      - name: username
+        data_tests: [not_null]
+      - name: subscription_type
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ["free", "premium", "family", "student"]
+      - name: age_group
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ["13-17", "18-24", "25-34", "35-44", "45-54", "55+"]
+
+  - name: stg_stream_events
+    description: Cleaned stream events from raw source.
+    columns:
+      - name: event_id
+        description: Unique event identifier.
+        data_tests: [unique, not_null]
+      - name: user_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_users')
+              field: user_id
+      - name: track_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_tracks')
+              field: track_id
+      - name: started_at
+        data_tests: [not_null]
+      - name: event_date
+        data_tests: [not_null]
+      - name: ms_played
+        data_tests: [not_null]
+      - name: platform
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ["ios", "android", "web", "chromecast", "alexa"]
+      - name: device_type
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ["mobile", "desktop", "tablet", "tv", "smart_speaker"]

@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    name: Lint & Smoke Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install all dependencies
+        run: |
+          pip install -r mock_api/requirements.txt
+          pip install -r pipeline/requirements.txt
+          pip install -r dbt_project/requirements.txt
+
+      - name: Start mock API
+        run: |
+          cd mock_api
+          uvicorn app:app --host 0.0.0.0 --port 8000 &
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:8000/health > /dev/null; then break; fi
+            sleep 1
+          done
+
+      - name: Smoke test API endpoints
+        run: |
+          curl -sf "http://localhost:8000/artists?page_size=5"   | python -m json.tool > /dev/null
+          curl -sf "http://localhost:8000/tracks?page_size=5"    | python -m json.tool > /dev/null
+          curl -sf "http://localhost:8000/users?page_size=5"     | python -m json.tool > /dev/null
+          curl -sf "http://localhost:8000/events?date=2025-01-01&page_size=10" | python -m json.tool > /dev/null
+          echo "All API smoke tests passed."
+
+      - name: Run pipeline dry run
+        working-directory: pipeline
+        env:
+          SOUNDFLOW_API_URL: "http://localhost:8000"
+          DUCKDB_PATH: "../soundflow.duckdb"
+        run: python pipeline.py --dry-run
+
+      - name: Run pipeline with small backfill (3 days)
+        working-directory: pipeline
+        env:
+          SOUNDFLOW_API_URL: "http://localhost:8000"
+          DUCKDB_PATH: "../soundflow.duckdb"
+        run: |
+          START=$(python -c "from datetime import date, timedelta; print((date.today()-timedelta(days=3)).isoformat())")
+          python pipeline.py --start-date "$START"
+
+      - name: Install dbt packages
+        working-directory: dbt_project
+        run: dbt deps
+
+      - name: Run dbt models
+        working-directory: dbt_project
+        env:
+          DUCKDB_PATH: "../soundflow.duckdb"
+        run: dbt run --target dev --profiles-dir .
+
+      - name: Run dbt tests
+        working-directory: dbt_project
+        env:
+          DUCKDB_PATH: "../soundflow.duckdb"
+        run: dbt test --target dev --profiles-dir .

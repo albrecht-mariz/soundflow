@@ -1,0 +1,56 @@
+version: 2
+
+models:
+  - name: daily_listening_stats
+    description: Daily platform-wide listening summary with engagement and platform breakdown.
+    columns:
+      - name: event_date
+        description: Calendar date of the listening activity.
+        data_tests: [unique, not_null]
+      - name: total_streams
+        data_tests: [not_null]
+      - name: active_users
+        data_tests: [not_null]
+      - name: completion_rate_pct
+        data_tests: [not_null]
+      - name: skip_rate_pct
+        data_tests: [not_null]
+
+  - name: top_tracks_daily
+    description: Top 100 tracks by stream count per day, with track and artist metadata.
+    columns:
+      - name: event_date
+        data_tests: [not_null]
+      - name: track_id
+        data_tests: [not_null]
+      - name: daily_rank
+        data_tests: [not_null]
+      - name: stream_count
+        data_tests: [not_null]
+
+  - name: user_activity
+    description: All-time listening summary per user, one row per user.
+    columns:
+      - name: user_id
+        data_tests: [unique, not_null]
+      - name: username
+        data_tests: [not_null]
+      - name: subscription_type
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ["free", "premium", "family", "student"]
+      - name: total_streams
+        data_tests: [not_null]
+
+  - name: genre_trends
+    description: Daily genre popularity with share of total streams and rank.
+    columns:
+      - name: event_date
+        data_tests: [not_null]
+      - name: genre
+        data_tests: [not_null]
+      - name: stream_count
+        data_tests: [not_null]
+      - name: pct_of_daily_streams
+        data_tests: [not_null]

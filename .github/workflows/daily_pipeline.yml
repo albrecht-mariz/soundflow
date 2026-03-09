@@ -1,0 +1,156 @@
+name: Daily Pipeline
+
+on:
+  schedule:
+    # Run every day at 06:00 UTC
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: "Backfill start date (YYYY-MM-DD). Leave empty for yesterday only."
+        required: false
+        default: ""
+
+jobs:
+  run-pipeline:
+    name: Ingest → Transform
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # ------------------------------------------------------------------
+      # 1. Checkout
+      # ------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ------------------------------------------------------------------
+      # 2. Set up Python
+      # ------------------------------------------------------------------
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # ------------------------------------------------------------------
+      # 3. Restore previous DuckDB database (artifact from last run)
+      # ------------------------------------------------------------------
+      - name: Download previous DuckDB artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          name: soundflow-duckdb
+          path: .
+          if_no_artifact_found: ignore   # first run: no prior artifact exists
+        continue-on-error: true
+
+      # ------------------------------------------------------------------
+      # 4. Start mock API
+      # ------------------------------------------------------------------
+      - name: Install mock API dependencies
+        run: pip install -r mock_api/requirements.txt
+
+      - name: Start mock API server
+        run: |
+          cd mock_api
+          uvicorn app:app --host 0.0.0.0 --port 8000 &
+          echo "Waiting for API to be ready..."
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:8000/health > /dev/null; then
+              echo "API is up."
+              break
+            fi
+            sleep 1
+          done
+
+      # ------------------------------------------------------------------
+      # 5. Run dlt pipeline
+      # ------------------------------------------------------------------
+      - name: Install pipeline dependencies
+        run: pip install -r pipeline/requirements.txt
+
+      - name: Run dlt ingestion
+        working-directory: pipeline
+        env:
+          SOUNDFLOW_API_URL: "http://localhost:8000"
+          DUCKDB_PATH: "../soundflow.duckdb"
+        run: |
+          START_DATE="${{ github.event.inputs.start_date }}"
+          if [ -n "$START_DATE" ]; then
+            python pipeline.py --start-date "$START_DATE"
+          else
+            python pipeline.py
+          fi
+
+      # ------------------------------------------------------------------
+      # 6. Run dbt transformations
+      # ------------------------------------------------------------------
+      - name: Install dbt dependencies
+        run: pip install -r dbt_project/requirements.txt
+
+      - name: Install dbt packages
+        working-directory: dbt_project
+        run: dbt deps
+
+      - name: Run dbt models
+        working-directory: dbt_project
+        env:
+          DUCKDB_PATH: "../soundflow.duckdb"
+        run: dbt run --target prod --profiles-dir .
+
+      - name: Run dbt tests
+        working-directory: dbt_project
+        env:
+          DUCKDB_PATH: "../soundflow.duckdb"
+        run: dbt test --target prod --profiles-dir .
+
+      - name: Generate dbt docs
+        working-directory: dbt_project
+        env:
+          DUCKDB_PATH: "../soundflow.duckdb"
+        run: dbt docs generate --target prod --profiles-dir .
+
+      # ------------------------------------------------------------------
+      # 7. Upload updated DuckDB database
+      # ------------------------------------------------------------------
+      - name: Upload DuckDB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: soundflow-duckdb
+          path: soundflow.duckdb
+          retention-days: 90
+
+      # ------------------------------------------------------------------
+      # 8. Upload dbt docs
+      # ------------------------------------------------------------------
+      - name: Upload dbt docs
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-docs
+          path: dbt_project/target/
+          retention-days: 30
+
+      # ------------------------------------------------------------------
+      # 9. Log pipeline summary
+      # ------------------------------------------------------------------
+      - name: Print DuckDB summary
+        run: |
+          pip install duckdb --quiet
+          python - <<'EOF'
+          import duckdb, os
+          con = duckdb.connect("soundflow.duckdb", read_only=True)
+          print("\n=== Raw Layer ===")
+          for tbl in ["artists", "albums", "tracks", "users", "stream_events"]:
+              try:
+                  n = con.execute(f"SELECT count(*) FROM raw.{tbl}").fetchone()[0]
+                  print(f"  raw.{tbl}: {n:,} rows")
+              except Exception as e:
+                  print(f"  raw.{tbl}: {e}")
+          print("\n=== Marts Layer ===")
+          for tbl in ["daily_listening_stats", "top_tracks_daily", "user_activity", "genre_trends"]:
+              try:
+                  n = con.execute(f"SELECT count(*) FROM marts.{tbl}").fetchone()[0]
+                  print(f"  marts.{tbl}: {n:,} rows")
+              except Exception as e:
+                  print(f"  marts.{tbl}: {e}")
+          con.close()
+          EOF

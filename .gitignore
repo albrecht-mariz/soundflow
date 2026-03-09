@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# dlt
+pipeline/.dlt/
+
+# dbt
+dbt_project/target/
+dbt_project/dbt_packages/
+dbt_project/logs/
+dbt_project/.user.yml
+
+# DuckDB
+*.duckdb
+*.duckdb.wal
+data/
+
+# Docker
+.docker/
+
+# OS
+.DS_Store
+Thumbs.db
