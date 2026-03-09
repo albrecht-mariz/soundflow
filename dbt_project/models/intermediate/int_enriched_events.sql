@@ -58,10 +58,10 @@ enriched AS (
         u.age_group,
         u.joined_date
 
-    FROM events e
-    LEFT JOIN tracks t  ON e.track_id = t.track_id
-    LEFT JOIN artists a ON t.artist_id = a.artist_id
-    LEFT JOIN users u   ON e.user_id = u.user_id
+    FROM events AS e
+    LEFT JOIN tracks AS t  ON e.track_id = t.track_id
+    LEFT JOIN artists AS a ON t.artist_id = a.artist_id
+    LEFT JOIN users AS u   ON e.user_id = u.user_id
 )
 
 SELECT * FROM enriched

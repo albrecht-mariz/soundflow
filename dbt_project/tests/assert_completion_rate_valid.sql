@@ -3,5 +3,6 @@
 
 SELECT *
 FROM {{ ref('daily_listening_stats') }}
-WHERE completion_rate_pct < 0
-   OR completion_rate_pct > 100
+WHERE
+    completion_rate_pct < 0
+    OR completion_rate_pct > 100

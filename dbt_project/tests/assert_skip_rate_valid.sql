@@ -3,5 +3,6 @@
 
 SELECT *
 FROM {{ ref('daily_listening_stats') }}
-WHERE skip_rate_pct < 0
-   OR skip_rate_pct > 100
+WHERE
+    skip_rate_pct < 0
+    OR skip_rate_pct > 100

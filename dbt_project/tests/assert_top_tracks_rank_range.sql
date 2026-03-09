@@ -3,5 +3,6 @@
 
 SELECT *
 FROM {{ ref('top_tracks_daily') }}
-WHERE daily_rank < 1
-   OR daily_rank > 100
+WHERE
+    daily_rank < 1
+    OR daily_rank > 100

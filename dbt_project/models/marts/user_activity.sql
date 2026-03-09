@@ -61,8 +61,8 @@ final AS (
         s.preferred_device,
         COALESCE(s.shuffle_streams, 0)          AS shuffle_streams,
         COALESCE(s.offline_streams, 0)          AS offline_streams
-    FROM users u
-    LEFT JOIN user_stats s USING (user_id)
+    FROM users AS u
+    LEFT JOIN user_stats AS s ON u.user_id = s.user_id
 )
 
 SELECT * FROM final
