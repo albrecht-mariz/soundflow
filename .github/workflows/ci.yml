@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
   lint-and-test:
     name: Lint & Smoke Test
@@ -82,3 +85,18 @@ jobs:
         env:
           DUCKDB_PATH: "../soundflow.duckdb"
         run: dbt test --target dev --profiles-dir .
+
+      - name: Generate dbt docs
+        if: github.ref == 'refs/heads/main'
+        working-directory: dbt_project
+        env:
+          DUCKDB_PATH: "../soundflow.duckdb"
+        run: dbt docs generate --target dev --profiles-dir .
+
+      - name: Publish dbt docs to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: dbt_project/target
+          publish_branch: gh-pages
