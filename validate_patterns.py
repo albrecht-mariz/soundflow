@@ -123,7 +123,7 @@ def main():
         results.append(check(
             f"Top 20% users → {top20_pct:.1f}% of streams",
             top20_pct >= 70.0,
-            f"(expect ≥ 70%, target ~80%)"
+            "(expect ≥ 70%, target ~80%)"
         ))
     else:
         print(f"  [{INFO}] No data")
@@ -154,7 +154,7 @@ def main():
         results.append(check(
             f"Top 20% tracks → {top20_pct:.1f}% of streams",
             top20_pct >= 70.0,
-            f"(expect ≥ 70%, target ~80%)"
+            "(expect ≥ 70%, target ~80%)"
         ))
     else:
         print(f"  [{INFO}] No data")
@@ -186,7 +186,7 @@ def main():
         results.append(check(
             f"Top 20% artists → {top20_pct:.1f}% of streams",
             top20_pct >= 60.0,
-            f"(expect ≥ 60%, target ~80%)"
+            "(expect ≥ 60%, target ~80%)"
         ))
     else:
         print(f"  [{INFO}] No data")

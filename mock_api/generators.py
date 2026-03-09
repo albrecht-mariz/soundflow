@@ -12,7 +12,7 @@ Realistic patterns baked in:
 import bisect
 import hashlib
 import random
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from faker import Faker
 
 # ---------------------------------------------------------------------------

@@ -25,6 +25,10 @@ jobs:
           pip install -r mock_api/requirements.txt
           pip install -r pipeline/requirements.txt
           pip install -r dbt_project/requirements.txt
+          pip install ruff
+
+      - name: Lint Python files
+        run: ruff check mock_api/ pipeline/ bulk_backfill.py validate_patterns.py
 
       - name: Start mock API
         run: |

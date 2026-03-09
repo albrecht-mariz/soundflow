@@ -27,7 +27,7 @@ _STREAM_COLS = [
 
 # Add mock_api to path so we can import generators directly
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "mock_api"))
-from generators import (
+from generators import (  # noqa: E402
     _ARTISTS, _ALBUMS, _TRACKS, _USERS,
     _user_pop_order, _track_pop_order,
     _USER_CUM, _TRACK_CUM, _HOUR_CUM,
