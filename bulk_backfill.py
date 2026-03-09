@@ -29,12 +29,13 @@ _STREAM_COLS = [
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "mock_api"))
 from generators import (  # noqa: E402
     _ARTISTS, _ALBUMS, _TRACKS, _USERS,
-    _user_pop_order, _track_pop_order,
-    _USER_CUM, _TRACK_CUM, _HOUR_CUM,
+    _track_pop_order,
+    _TRACK_CUM, _HOUR_CUM,
     _stable_id,
     get_daily_event_count,
+    get_active_user_pool,
     DEVICE_TYPES, PLATFORMS,
-    NUM_USERS, NUM_TRACKS,
+    NUM_TRACKS,
 )
 
 DUCKDB_PATH = os.getenv("DUCKDB_PATH", "soundflow.duckdb")
@@ -42,23 +43,23 @@ BATCH_SIZE  = 20_000
 
 # ---------------------------------------------------------------------------
 # Pre-computed numpy arrays (built once at startup)
+# Active user pool is computed per-day — see _events_for_date()
 # ---------------------------------------------------------------------------
 
 print("Building lookup arrays...")
-_USER_CUM_NP  = np.array(_USER_CUM,  dtype=np.float64)
 _TRACK_CUM_NP = np.array(_TRACK_CUM, dtype=np.float64)
 _HOUR_CUM_NP  = np.array(_HOUR_CUM,  dtype=np.float64)
-_USER_POP_NP  = np.array(_user_pop_order,  dtype=np.int32)
 _TRACK_POP_NP = np.array(_track_pop_order, dtype=np.int32)
 
 # Pre-compute all user_ids and track_ids (avoids md5 per event)
-_USER_IDS  = [_stable_id("user",  i) for i in range(NUM_USERS)]
+_NUM_USERS = 100
+_USER_IDS  = [_stable_id("user",  i) for i in range(_NUM_USERS)]
 _TRACK_IDS = [_stable_id("track", i) for i in range(NUM_TRACKS)]
 
 _DEVICE_ARR   = np.array(DEVICE_TYPES)
 _PLATFORM_ARR = np.array(PLATFORMS)
 
-print(f"  Ready: {NUM_USERS:,} users · {NUM_TRACKS:,} tracks\n")
+print(f"  Ready: {_NUM_USERS:,} users · {NUM_TRACKS:,} tracks\n")
 
 
 # ---------------------------------------------------------------------------
@@ -190,6 +191,12 @@ def _events_for_date(event_date: date) -> list:
     total     = get_daily_event_count(event_date)
     rng       = np.random.default_rng(date_seed)
 
+    # ── Active user pool for this day ──────────────────────────────────────
+    active_indices, active_cum = get_active_user_pool(event_date, date_seed)
+    active_cum_np = np.array(active_cum, dtype=np.float64)
+    active_idx_np = np.array(active_indices, dtype=np.int32)
+    n_active      = len(active_indices)
+
     # ── Random draws (all at once) ─────────────────────────────────────────
     r_user     = rng.random(total)
     r_track    = rng.random(total)
@@ -205,11 +212,11 @@ def _events_for_date(event_date: date) -> list:
     r_offline  = rng.random(total) < 0.05
 
     # ── Weighted selection (vectorised bisect) ─────────────────────────────
-    user_ranks  = np.searchsorted(_USER_CUM_NP,  r_user).clip(0, NUM_USERS  - 1)
+    user_ranks  = np.searchsorted(active_cum_np, r_user).clip(0, n_active   - 1)
     track_ranks = np.searchsorted(_TRACK_CUM_NP, r_track).clip(0, NUM_TRACKS - 1)
     hours       = np.searchsorted(_HOUR_CUM_NP,  r_hour_r).clip(0, 23)
 
-    user_indices  = _USER_POP_NP[user_ranks]
+    user_indices  = active_idx_np[user_ranks]
     track_indices = _TRACK_POP_NP[track_ranks]
 
     # ── Listen behaviour ───────────────────────────────────────────────────

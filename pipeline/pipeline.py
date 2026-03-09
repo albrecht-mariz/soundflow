@@ -51,10 +51,11 @@ def main():
         print("Dry run — exiting without loading data.")
         return
 
+    default_db = os.path.join(os.path.dirname(__file__), "..", "soundflow.duckdb")
     pipeline = dlt.pipeline(
         pipeline_name="soundflow",
         destination=dlt.destinations.duckdb(
-            credentials=os.getenv("DUCKDB_PATH", "soundflow.duckdb")
+            credentials=os.getenv("DUCKDB_PATH", default_db)
         ),
         dataset_name="raw",
         progress="log",

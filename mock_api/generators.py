@@ -294,6 +294,54 @@ def generate_users(page: int, page_size: int) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Daily active user pool
+# ---------------------------------------------------------------------------
+
+def get_active_user_pool(event_date: date, date_seed: int) -> tuple:
+    """
+    Return (active_user_indices, cum_weights) for users active on the given day.
+
+    Popular users are more likely to be active. Active count varies naturally
+    with the day's volume (~50 on a quiet summer Monday, ~80 on a busy Saturday).
+    Uses a separate seed offset so it doesn't interfere with event-level RNG.
+    """
+    rng = random.Random(date_seed + 888)
+
+    # Day factor: weekday × month × holiday — same multipliers as event volume
+    # but without the user-growth factor (all 100 users exist from day 1)
+    day_factor = _DOW_MULT[event_date.weekday()] * _MONTH_MULT[event_date.month]
+    if _is_holiday_period(event_date):
+        day_factor *= 1.30
+    # Map day_factor [0.78, ~2.0] → base_rate [0.50, 0.85]
+    base_rate = 0.50 + 0.35 * min((day_factor - 0.78) / (2.0 - 0.78), 1.0)
+    base_rate = max(0.50, base_rate)
+
+    active_indices = []
+    active_weights = []
+    for rank in range(NUM_USERS):
+        user_idx = _user_pop_order[rank]
+        # Rank 0 (most popular) → ~base_rate * 1.4; rank 99 → ~base_rate * 0.3
+        user_prob = base_rate * (1.4 - 1.1 * rank / (NUM_USERS - 1))
+        user_prob = max(0.05, min(0.99, user_prob))
+        if rng.random() < user_prob:
+            active_indices.append(user_idx)
+            active_weights.append(1.0 / (rank + 1) ** 1.0)
+
+    if not active_indices:
+        active_indices = [_user_pop_order[0]]
+        active_weights = [1.0]
+
+    total_w = sum(active_weights)
+    cum, running = [], 0.0
+    for w in active_weights:
+        running += w / total_w
+        cum.append(running)
+    cum[-1] = 1.0
+
+    return active_indices, cum
+
+
+# ---------------------------------------------------------------------------
 # Event generator — patterns applied here
 # ---------------------------------------------------------------------------
 
@@ -303,20 +351,24 @@ def generate_events(event_date: date, page: int, page_size: int) -> dict:
       - Total volume varies by weekday, month, and holiday period
       - Listening hour weighted toward evenings
       - User and track selection follow Zipf (80/20) distribution
+      - Only a realistic subset of users are active each day (~50–80)
     """
     date_seed = int(event_date.strftime("%Y%m%d"))
     total = get_daily_event_count(event_date)
     start = (page - 1) * page_size
     end = min(start + page_size, total)
 
+    # Active user pool — computed once for the day, shared across all pages
+    active_user_indices, active_user_cum = get_active_user_pool(event_date, date_seed)
+
     # Each page independently seeded → no need to replay prior pages
     rng = random.Random(date_seed + page * 9_999)
 
     events = []
     for idx in range(start, end):
-        # ── Track & user (Zipf 80/20) ─────────────────────────────────────
-        user_rank  = _weighted_idx(rng, _USER_CUM)
-        user_index = _user_pop_order[user_rank]
+        # ── Track & user (Zipf 80/20 within active pool) ──────────────────
+        active_rank = _weighted_idx(rng, active_user_cum)
+        user_index  = active_user_indices[active_rank]
 
         track_rank  = _weighted_idx(rng, _TRACK_CUM)
         track_index = _track_pop_order[track_rank]
