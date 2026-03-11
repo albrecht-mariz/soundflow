@@ -186,7 +186,7 @@ make dbt-docs
 
 The docs include an interactive lineage graph (DAG) showing the full source → staging → intermediate → marts dependency chain. They are also published automatically to GitHub Pages on every push to `main`:
 
-**[albrecht-mariz.github.io/soundflow](https://albrecht-mariz.github.io/soundflow)**
+**[albrecht-mariz.github.io/soundflow-pipeline](https://albrecht-mariz.github.io/soundflow-pipeline)**
 
 ## GitHub Actions
 
