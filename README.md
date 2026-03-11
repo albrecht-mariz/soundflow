@@ -31,7 +31,7 @@ An end-to-end batch data pipeline that simulates a music streaming service.
              ▼
 ┌──────────────────────────┐
 │   dlt Pipeline           │  Daily incremental load (events by date)
-│   (Python)               │  Replace (reference data) · Append (events)
+│   (Python)               │  Replace (reference data) · Merge (events)
 └────────────┬─────────────┘
              │
              ▼
@@ -58,7 +58,7 @@ An end-to-end batch data pipeline that simulates a music streaming service.
              ▲
 GitHub Actions (daily 06:00 UTC)
   · Downloads previous DuckDB artifact
-  · Appends new day's events via dlt
+  · Merges new day's events via dlt (deduplicates on event_id)
   · Runs dbt models + tests
   · Uploads updated DuckDB artifact
 ```
@@ -195,13 +195,13 @@ Two workflows are included:
 | Workflow | Trigger | Purpose |
 |---|---|---|
 | `daily_pipeline.yml` | Daily 06:00 UTC + manual | Full pipeline run with DuckDB artifact persistence |
-| `ci.yml` | Push/PR to main | Smoke tests, 3-day pipeline run, dbt tests |
+| `ci.yml` | Push/PR to main | Lint (ruff + sqlfluff), smoke tests, 3-day pipeline run, dbt tests, publish dbt docs to GitHub Pages |
 
 ### Artifact Persistence
 
 The DuckDB file is persisted across daily runs as a GitHub Actions artifact (`soundflow-duckdb`). Each run:
 1. Downloads the previous DuckDB artifact
-2. Appends the new day's events (incremental via dlt)
+2. Merges the new day's events (incremental via dlt, deduplicates on event_id)
 3. Rebuilds dbt mart tables
 4. Uploads the updated DuckDB as a new artifact (90-day retention)
 
