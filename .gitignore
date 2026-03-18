@@ -6,6 +6,9 @@ __pycache__/
 venv/
 .env
 
+# BI agent
+bi_agent/__pycache__/
+
 # dlt
 pipeline/.dlt/
 

@@ -6,7 +6,7 @@ Project instructions for Claude Code. Read this first before making changes.
 
 ## Project Overview
 
-End-to-end batch data pipeline simulating a music streaming service. Covers ingestion (dlt), storage (DuckDB), transformation (dbt), and orchestration (GitHub Actions). The next layer being built is **agentic BI** using Lightdash + Slack. See [SKILLS.md](SKILLS.md) for the full BI roadmap.
+End-to-end batch data pipeline simulating a music streaming service. Covers ingestion (dlt), storage (DuckDB), transformation (dbt), and orchestration (GitHub Actions). The next layer being built is **agentic BI** using Lightdash + Slack. For the full BI roadmap invoke `/bi-roadmap` or see [`.claude/skills/bi-roadmap/SKILL.md`](.claude/skills/bi-roadmap/SKILL.md).
 
 ---
 
@@ -47,6 +47,9 @@ make dbt-docs                     # build + serve docs (http://localhost:8080)
 # Full stack (Docker)
 make docker-up
 
+# Lightdash BI (self-hosted, port 8090) — do NOT run while pipeline is active
+docker-compose up lightdash-db lightdash
+
 # Pattern validation
 python validate_patterns.py
 
@@ -54,6 +57,14 @@ python validate_patterns.py
 ruff check .                      # Python
 sqlfluff lint dbt_project/        # SQL
 ```
+
+## Claude Code Slash Commands
+
+| Command | What it does |
+|---|---|
+| `/run-pipeline` | Start API → dlt ingest → dbt run → dbt test, with summary |
+| `/dbt-check` | sqlfluff lint + dbt tests + ruff, consolidated failure report |
+| `/bi-roadmap` | Load the agentic BI roadmap skill (Phases 1–4, Lightdash, Slack agent) |
 
 ---
 
@@ -85,7 +96,7 @@ soundflow-pipeline/
 - **Tests**: Schema tests in `schema.yml`; business-logic tests as singular SQL in `dbt_project/tests/`.
 - **Surrogate keys**: Use `dbt_utils.generate_surrogate_key()`.
 - **Schema separation**: `generate_schema_name.sql` macro enforces dev vs prod schemas. Never override this.
-- **Exposures**: Document all Lightdash dashboards as `exposures:` in `dbt_project/models/marts/schema.yml` (or a dedicated `exposures.yml`). See [SKILLS.md](SKILLS.md).
+- **Exposures**: Document all Lightdash dashboards as `exposures:` in `dbt_project/models/marts/exposures.yml`. See `/bi-roadmap` for details.
 
 ## SQL Style
 
@@ -120,7 +131,7 @@ The next phase is building a Lightdash BI layer on top of the dbt marts. Key tas
 3. Configure Lightdash to connect to the DuckDB artifact via dbt project.
 4. Build initial dashboards: platform overview, top tracks, genre trends, user segments.
 
-See [SKILLS.md](SKILLS.md) for the full phased plan including the Slack agent.
+See `/bi-roadmap` (`.claude/skills/bi-roadmap/SKILL.md`) for the full phased plan including the Slack agent.
 
 ---
 

@@ -101,5 +101,28 @@ services:
       - ./dbt_project:/usr/app/dbt:ro
       - ./data:/data:ro  # DuckDB file (read-only — pipeline must not run concurrently)
 
+  # ── Slack BI Bot (Phase 3 + 4) ────────────────────────────────────────────
+  # Runs the Slack bot that answers questions and builds dashboards.
+  # Requires .env to be populated (copy from .env.example).
+  # Lightdash must also be running for Phase 3 dashboard creation to work.
+  #
+  # Start: docker-compose up slack-bot
+  # ─────────────────────────────────────────────────────────────────────────────
+  slack-bot:
+    build:
+      context: ./bi_agent
+      dockerfile: Dockerfile
+    container_name: soundflow_slack_bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DUCKDB_PATH: /data/soundflow.duckdb
+      LIGHTDASH_BASE_URL: http://lightdash:8090
+    volumes:
+      - ./data:/data:ro
+    depends_on:
+      - lightdash
+
 volumes:
   lightdash_db_data:

@@ -1,8 +1,16 @@
-# Agentic BI Roadmap
+---
+name: bi-roadmap
+description: >
+  Agentic BI roadmap for the SoundFlow pipeline. Use when working on Lightdash
+  dashboards, the Slack agent, the semantic layer, dbt exposures, or any Phase
+  1–4 BI task. Contains architecture diagrams, implementation sketches,
+  deliverable checklists, and decisions about the semantic layer.
+user-invocable: true
+---
 
-> **Moved to a Claude Code skill for auto-discovery.**
-> Full content is at [`.claude/skills/bi-roadmap/SKILL.md`](.claude/skills/bi-roadmap/SKILL.md).
-> In Claude Code, invoke it with `/bi-roadmap` or it will be loaded automatically when working on BI tasks.
+# Agentic BI Roadmap — SoundFlow
+
+Phased plan for building the BI layer on top of the SoundFlow dbt marts, evolving from static dashboards to a fully agentic, Slack-native analytics experience.
 
 ---
 
@@ -30,63 +38,7 @@ Exposures declare downstream uses of dbt models (dashboards, reports, ML models)
 - Prove which mart tables a dashboard depends on (useful for impact analysis).
 - Are the standard way to link dbt to BI tools.
 
-Create a dedicated `dbt_project/models/marts/exposures.yml`:
-
-```yaml
-version: 2
-
-exposures:
-
-  - name: platform_overview_dashboard
-    type: dashboard
-    maturity: high
-    url: https://lightdash.example.com/dashboards/platform-overview
-    description: >
-      Daily platform KPIs: total streams, active users, completion rate,
-      skip rate. Primary executive dashboard.
-    depends_on:
-      - ref('daily_listening_stats')
-    owner:
-      name: Data Team
-      email: data@soundflow.io
-
-  - name: top_tracks_dashboard
-    type: dashboard
-    maturity: high
-    url: https://lightdash.example.com/dashboards/top-tracks
-    description: >
-      Daily top 100 tracks with stream counts, artist info, and rank movement.
-    depends_on:
-      - ref('top_tracks_daily')
-    owner:
-      name: Data Team
-      email: data@soundflow.io
-
-  - name: genre_trends_dashboard
-    type: dashboard
-    maturity: medium
-    url: https://lightdash.example.com/dashboards/genre-trends
-    description: >
-      Genre popularity over time, share of daily streams, and rank trends.
-    depends_on:
-      - ref('genre_trends')
-    owner:
-      name: Data Team
-      email: data@soundflow.io
-
-  - name: user_segments_dashboard
-    type: dashboard
-    maturity: medium
-    url: https://lightdash.example.com/dashboards/user-segments
-    description: >
-      All-time user listening behaviour, subscription type breakdown,
-      and top-listener identification.
-    depends_on:
-      - ref('user_activity')
-    owner:
-      name: Data Team
-      email: data@soundflow.io
-```
+The file lives at `dbt_project/models/marts/exposures.yml`. Fill in the `url:` fields once dashboards are built in Lightdash.
 
 ---
 
@@ -176,11 +128,17 @@ Draft dashboard (unpublished / in review space)
 Human review & publish
 ```
 
-### Key components
+### Claude Code agent design (Command → Agent → Skill pattern)
 
-- **Lightdash API**: Lightdash exposes a REST API for creating/updating dashboards, charts (saved queries), and spaces. Authenticate via API token.
-- **Available context for the agent**: The agent needs to know which metrics and dimensions exist. Feed it the `schema.yml` `meta:` blocks (or a compiled metrics manifest from dbt) as context.
-- **Approval flow**: New dashboards land in a `Draft` space or with `is_private: true`. A human promotes them to a shared space.
+```
+/build-dashboard (command: .claude/commands/build-dashboard.md)
+    └── lightdash-agent (subagent: .claude/agents/lightdash-agent.md)
+            ├── lightdash-api skill     (Lightdash REST API reference)
+            └── metrics-context skill   (dbt schema.yml meta: blocks as context)
+```
+
+- The **lightdash-agent** subagent has `tools:` limited to HTTP calls + file reads — it cannot touch pipeline code.
+- `permissionMode: "plan"` on the subagent means it will propose the dashboard JSON and wait for human confirmation before calling the Lightdash API.
 
 ### Implementation sketch
 
@@ -190,7 +148,7 @@ Human review & publish
 import anthropic
 import httpx
 
-LIGHTDASH_BASE = "https://lightdash.example.com/api/v1"
+LIGHTDASH_BASE = "http://localhost:8090/api/v1"
 LIGHTDASH_TOKEN = "..."  # from env
 
 def build_dashboard_from_prompt(prompt: str, metrics_context: str) -> dict:
@@ -221,10 +179,13 @@ def create_draft_dashboard(payload: dict) -> str:
 ```
 
 ### Deliverables
-- [ ] `bi_agent/` folder with `prompt_to_dashboard.py`
-- [ ] Metrics context loader (reads `schema.yml` meta blocks or dbt manifest)
-- [ ] Draft dashboard space in Lightdash for review
-- [ ] Simple CLI: `python bi_agent/prompt_to_dashboard.py "show me weekly streams by genre"`
+- [x] `bi_agent/` folder with `prompt_to_dashboard.py`
+- [x] Metrics context loader (`bi_agent/metrics_context.py` — reads `schema.yml` meta blocks)
+- [x] Lightdash API client (`bi_agent/lightdash_client.py`)
+- [x] Draft dashboard space in Lightdash for review ("Draft — Pending Review")
+- [x] `.claude/agents/lightdash-agent.md` subagent with `permissionMode: plan`
+- [x] `.claude/commands/build-dashboard.md` slash command
+- [x] Simple CLI: `python -m bi_agent.prompt_to_dashboard "show me weekly streams by genre"`
 
 ---
 
@@ -273,12 +234,12 @@ Lightdash API: GET /dashboards (search by name/tag)
 5. **Approval gating**: Only the reviewer (or a role-gated set of users) can approve a new dashboard — use Slack user ID checks.
 
 ### Deliverables
-- [ ] `bi_agent/slack_bot.py` (Slack Bolt app)
-- [ ] `bi_agent/intent.py` (Claude API intent classifier)
-- [ ] `bi_agent/dashboard_lookup.py` (Lightdash API search + exposures index)
-- [ ] Approval workflow with Slack Block Kit interactive buttons
-- [ ] Environment variables: `SLACK_BOT_TOKEN`, `SLACK_SIGNING_SECRET`, `LIGHTDASH_TOKEN`, `ANTHROPIC_API_KEY`
-- [ ] Deployment: Docker container or AWS Lambda
+- [x] `bi_agent/slack_bot.py` (Slack Bolt app — Socket Mode)
+- [x] `bi_agent/intent.py` (Claude Haiku intent classifier)
+- [x] `bi_agent/dashboard_lookup.py` (exposures.yml index + Lightdash API search)
+- [x] Approval workflow with Slack Block Kit interactive buttons
+- [x] Environment variables documented in `.env.example`
+- [x] Deployment: `docker-compose up slack-bot` (uses `bi_agent/Dockerfile`)
 
 ---
 
@@ -314,8 +275,6 @@ Slack reply (in-thread)
 
 ### Semantic Layer here: strongly recommended
 
-At this phase, a proper semantic layer prevents the agent from writing ad-hoc SQL against raw tables. Options:
-
 | Option | Pros | Cons |
 |---|---|---|
 | **dbt Semantic Layer (MetricFlow)** | Metrics defined once, queried consistently via API; dbt-native | Requires dbt Cloud or self-hosted dbt Semantic Layer server; DuckDB support is experimental |
@@ -325,11 +284,12 @@ At this phase, a proper semantic layer prevents the agent from writing ad-hoc SQ
 **Recommended path**: Start with the Lightdash API (Phase 4a), then add MetricFlow (Phase 4b) once usage patterns stabilise.
 
 ### Deliverables
-- [ ] `bi_agent/answer.py` (data retrieval + formatting)
-- [ ] DuckDB query executor with parameter binding (no SQL injection)
-- [ ] Slack chart renderer (Matplotlib PNG → Slack Files API)
-- [ ] Conversation memory (thread context so follow-up questions work)
-- [ ] Rate limiting + error handling for Slack reply
+- [x] `bi_agent/answer.py` (data retrieval + Slack formatting, routes 10 KPI intents)
+- [x] `bi_agent/chart.py` (Matplotlib PNG renderer — dark theme, returns bytes for Slack upload)
+- [x] DuckDB query executor with parameterised queries (no SQL injection)
+- [x] Slack chart renderer (Matplotlib PNG → `files_upload_v2`)
+- [ ] Conversation memory (thread context so follow-up questions work — future)
+- [ ] Rate limiting + error handling (basic error replies in place; full rate limiting is future)
 
 ---
 
