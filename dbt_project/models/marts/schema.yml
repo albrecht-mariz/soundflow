@@ -1,56 +1,681 @@
 version: 2
 
 models:
+  # ---------------------------------------------------------------------------
+  # daily_listening_stats
+  # ---------------------------------------------------------------------------
   - name: daily_listening_stats
     description: Daily platform-wide listening summary with engagement and platform breakdown.
+    meta:
+      label: "Daily Listening Stats"
     columns:
       - name: event_date
         description: Calendar date of the listening activity.
+        meta:
+          dimension:
+            type: date
+            label: "Date"
         data_tests: [unique, not_null]
+
       - name: total_streams
-        data_tests: [not_null]
-      - name: active_users
-        data_tests: [not_null]
-      - name: completion_rate_pct
-        data_tests: [not_null]
-      - name: skip_rate_pct
+        description: Total number of stream events on the day.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            total_streams:
+              type: sum
+              label: "Total Streams"
         data_tests: [not_null]
 
+      - name: active_users
+        description: Distinct users who streamed at least once.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            active_users:
+              type: max
+              label: "Active Users"
+        data_tests: [not_null]
+
+      - name: unique_tracks_played
+        description: Distinct tracks streamed on the day.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            unique_tracks_played:
+              type: max
+              label: "Unique Tracks Played"
+
+      - name: unique_artists_played
+        description: Distinct artists streamed on the day.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            unique_artists_played:
+              type: max
+              label: "Unique Artists Played"
+
+      - name: total_listening_hours
+        description: Sum of all stream durations in hours.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            total_listening_hours:
+              type: sum
+              label: "Total Listening Hours"
+
+      - name: avg_pct_played
+        description: Average percentage of track played across all streams.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            avg_pct_played:
+              type: average
+              label: "Avg % Played"
+
+      - name: completed_streams
+        description: Streams played to completion.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            completed_streams:
+              type: sum
+              label: "Completed Streams"
+
+      - name: skipped_streams
+        description: Streams skipped before completion.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            skipped_streams:
+              type: sum
+              label: "Skipped Streams"
+
+      - name: completion_rate_pct
+        description: Percentage of streams completed (0–100).
+        meta:
+          dimension:
+            type: number
+          metrics:
+            avg_completion_rate:
+              type: average
+              label: "Avg Completion Rate (%)"
+        data_tests: [not_null]
+
+      - name: skip_rate_pct
+        description: Percentage of streams skipped (0–100).
+        meta:
+          dimension:
+            type: number
+          metrics:
+            avg_skip_rate:
+              type: average
+              label: "Avg Skip Rate (%)"
+        data_tests: [not_null]
+
+      - name: streams_ios
+        description: Streams from iOS devices.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            streams_ios:
+              type: sum
+              label: "Streams — iOS"
+
+      - name: streams_android
+        description: Streams from Android devices.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            streams_android:
+              type: sum
+              label: "Streams — Android"
+
+      - name: streams_web
+        description: Streams from the web player.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            streams_web:
+              type: sum
+              label: "Streams — Web"
+
+      - name: streams_chromecast
+        description: Streams via Chromecast.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            streams_chromecast:
+              type: sum
+              label: "Streams — Chromecast"
+
+      - name: streams_alexa
+        description: Streams via Alexa.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            streams_alexa:
+              type: sum
+              label: "Streams — Alexa"
+
+      - name: streams_free
+        description: Streams by free-tier users.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            streams_free:
+              type: sum
+              label: "Streams — Free"
+
+      - name: streams_premium
+        description: Streams by premium users.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            streams_premium:
+              type: sum
+              label: "Streams — Premium"
+
+      - name: streams_family
+        description: Streams by family-plan users.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            streams_family:
+              type: sum
+              label: "Streams — Family"
+
+      - name: streams_student
+        description: Streams by student-plan users.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            streams_student:
+              type: sum
+              label: "Streams — Student"
+
+      - name: offline_streams
+        description: Streams played in offline mode.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            offline_streams:
+              type: sum
+              label: "Offline Streams"
+
+      - name: shuffle_streams
+        description: Streams played in shuffle mode.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            shuffle_streams:
+              type: sum
+              label: "Shuffle Streams"
+
+  # ---------------------------------------------------------------------------
+  # top_tracks_daily
+  # ---------------------------------------------------------------------------
   - name: top_tracks_daily
     description: Top 100 tracks by stream count per day, with track and artist metadata.
+    meta:
+      label: "Top Tracks Daily"
     columns:
       - name: event_date
-        data_tests: [not_null]
-      - name: track_id
-        data_tests: [not_null]
-      - name: daily_rank
-        data_tests: [not_null]
-      - name: stream_count
+        description: Calendar date.
+        meta:
+          dimension:
+            type: date
+            label: "Date"
         data_tests: [not_null]
 
+      - name: track_id
+        description: Unique identifier for the track.
+        meta:
+          dimension:
+            type: string
+            label: "Track ID"
+        data_tests: [not_null]
+
+      - name: track_title
+        description: Name of the track.
+        meta:
+          dimension:
+            type: string
+            label: "Track"
+
+      - name: artist_id
+        description: Unique identifier for the artist.
+        meta:
+          dimension:
+            type: string
+            label: "Artist ID"
+
+      - name: artist_name
+        description: Name of the artist.
+        meta:
+          dimension:
+            type: string
+            label: "Artist"
+
+      - name: genre
+        description: Music genre of the track.
+        meta:
+          dimension:
+            type: string
+            label: "Genre"
+
+      - name: release_year
+        description: Year the track was released.
+        meta:
+          dimension:
+            type: number
+            label: "Release Year"
+
+      - name: stream_count
+        description: Number of streams for this track on this day.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            total_streams:
+              type: sum
+              label: "Total Streams"
+        data_tests: [not_null]
+
+      - name: unique_listeners
+        description: Distinct users who streamed this track on this day.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            total_unique_listeners:
+              type: sum
+              label: "Unique Listeners"
+
+      - name: listening_hours
+        description: Total hours streamed for this track on this day.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            total_listening_hours:
+              type: sum
+              label: "Listening Hours"
+
+      - name: avg_pct_played
+        description: Average percentage of the track played.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            avg_pct_played:
+              type: average
+              label: "Avg % Played"
+
+      - name: completions
+        description: Number of completed plays.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            total_completions:
+              type: sum
+              label: "Completions"
+
+      - name: skips
+        description: Number of skips.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            total_skips:
+              type: sum
+              label: "Skips"
+
+      - name: completion_rate_pct
+        description: Percentage of streams completed (0–100).
+        meta:
+          dimension:
+            type: number
+          metrics:
+            avg_completion_rate:
+              type: average
+              label: "Avg Completion Rate (%)"
+
+      - name: daily_rank
+        description: Track rank by stream count on this day (1 = most streamed).
+        meta:
+          dimension:
+            type: number
+            label: "Daily Rank"
+        data_tests: [not_null]
+
+  # ---------------------------------------------------------------------------
+  # user_activity
+  # ---------------------------------------------------------------------------
   - name: user_activity
     description: All-time listening summary per user, one row per user.
+    meta:
+      label: "User Activity"
     columns:
       - name: user_id
+        description: Unique identifier for the user.
+        meta:
+          dimension:
+            type: string
+            label: "User ID"
         data_tests: [unique, not_null]
+
       - name: username
+        description: Username.
+        meta:
+          dimension:
+            type: string
+            label: "Username"
         data_tests: [not_null]
+
+      - name: country
+        description: User's country.
+        meta:
+          dimension:
+            type: string
+            label: "Country"
+
       - name: subscription_type
+        description: Subscription tier (free, premium, family, student).
+        meta:
+          dimension:
+            type: string
+            label: "Subscription Type"
         data_tests:
           - not_null
           - accepted_values:
               values: ["free", "premium", "family", "student"]
+
+      - name: age_group
+        description: User's age group.
+        meta:
+          dimension:
+            type: string
+            label: "Age Group"
+
+      - name: joined_date
+        description: Date the user joined the platform.
+        meta:
+          dimension:
+            type: date
+            label: "Joined Date"
+
       - name: total_streams
+        description: Total all-time stream count for the user.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            sum_user_streams:
+              type: sum
+              label: "Total Streams (All Users)"
+            avg_streams_per_user:
+              type: average
+              label: "Avg Streams per User"
         data_tests: [not_null]
 
+      - name: unique_tracks
+        description: Distinct tracks ever streamed by the user.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            sum_unique_tracks:
+              type: sum
+              label: "Total Unique Tracks"
+
+      - name: unique_artists
+        description: Distinct artists ever streamed by the user.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            sum_unique_artists:
+              type: sum
+              label: "Total Unique Artists"
+
+      - name: active_days
+        description: Distinct days the user has streamed.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            avg_active_days:
+              type: average
+              label: "Avg Active Days per User"
+
+      - name: total_listening_hours
+        description: Total hours the user has listened all-time.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            sum_listening_hours:
+              type: sum
+              label: "Total Listening Hours (All Users)"
+            avg_listening_hours_per_user:
+              type: average
+              label: "Avg Listening Hours per User"
+
+      - name: avg_pct_played
+        description: Average percentage of tracks played across all streams.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            avg_pct_played:
+              type: average
+              label: "Avg % Played"
+
+      - name: completion_rate_pct
+        description: Overall completion rate for the user (%).
+        meta:
+          dimension:
+            type: number
+          metrics:
+            avg_completion_rate:
+              type: average
+              label: "Avg Completion Rate (%)"
+
+      - name: skip_rate_pct
+        description: Overall skip rate for the user (%).
+        meta:
+          dimension:
+            type: number
+          metrics:
+            avg_skip_rate:
+              type: average
+              label: "Avg Skip Rate (%)"
+
+      - name: first_stream_date
+        description: Date of the user's first ever stream.
+        meta:
+          dimension:
+            type: date
+            label: "First Stream Date"
+
+      - name: last_stream_date
+        description: Date of the user's most recent stream.
+        meta:
+          dimension:
+            type: date
+            label: "Last Stream Date"
+
+      - name: top_genre
+        description: Genre the user has listened to most.
+        meta:
+          dimension:
+            type: string
+            label: "Top Genre"
+
+      - name: preferred_platform
+        description: Platform the user streams most from.
+        meta:
+          dimension:
+            type: string
+            label: "Preferred Platform"
+
+      - name: preferred_device
+        description: Device the user streams most from.
+        meta:
+          dimension:
+            type: string
+            label: "Preferred Device"
+
+      - name: shuffle_streams
+        description: Total streams played in shuffle mode.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            total_shuffle_streams:
+              type: sum
+              label: "Shuffle Streams"
+
+      - name: offline_streams
+        description: Total streams played offline.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            total_offline_streams:
+              type: sum
+              label: "Offline Streams"
+
+  # ---------------------------------------------------------------------------
+  # genre_trends
+  # ---------------------------------------------------------------------------
   - name: genre_trends
     description: Daily genre popularity with share of total streams and rank.
+    meta:
+      label: "Genre Trends"
     columns:
       - name: event_date
+        description: Calendar date.
+        meta:
+          dimension:
+            type: date
+            label: "Date"
         data_tests: [not_null]
+
       - name: genre
+        description: Music genre.
+        meta:
+          dimension:
+            type: string
+            label: "Genre"
         data_tests: [not_null]
+
       - name: stream_count
+        description: Total streams for this genre on this day.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            total_streams:
+              type: sum
+              label: "Total Streams"
         data_tests: [not_null]
+
+      - name: unique_listeners
+        description: Distinct users who streamed this genre on this day.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            unique_listeners:
+              type: max
+              label: "Unique Listeners"
+
+      - name: unique_tracks
+        description: Distinct tracks streamed in this genre on this day.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            unique_tracks:
+              type: max
+              label: "Unique Tracks"
+
+      - name: unique_artists
+        description: Distinct artists streamed in this genre on this day.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            unique_artists:
+              type: max
+              label: "Unique Artists"
+
+      - name: listening_hours
+        description: Total hours streamed in this genre on this day.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            total_listening_hours:
+              type: sum
+              label: "Listening Hours"
+
+      - name: avg_pct_played
+        description: Average track completion percentage for this genre.
+        meta:
+          dimension:
+            type: number
+          metrics:
+            avg_pct_played:
+              type: average
+              label: "Avg % Played"
+
+      - name: completion_rate_pct
+        description: Average completion rate for this genre (%).
+        meta:
+          dimension:
+            type: number
+          metrics:
+            avg_completion_rate:
+              type: average
+              label: "Avg Completion Rate (%)"
+
       - name: pct_of_daily_streams
+        description: This genre's share of total streams on this day (%).
+        meta:
+          dimension:
+            type: number
+          metrics:
+            avg_pct_of_daily_streams:
+              type: average
+              label: "Avg Daily Stream Share (%)"
         data_tests: [not_null]
+
+      - name: daily_rank
+        description: Genre rank by stream count on this day (1 = most popular).
+        meta:
+          dimension:
+            type: number
+            label: "Daily Rank"

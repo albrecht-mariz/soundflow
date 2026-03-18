@@ -1,0 +1,53 @@
+version: 2
+
+exposures:
+
+  - name: platform_overview_dashboard
+    type: dashboard
+    maturity: high
+    # url: https://<your-lightdash-instance>/dashboards/<uuid>  # fill in after creating in Lightdash
+    description: >
+      Daily platform KPIs: total streams, active users, completion rate, skip rate,
+      listening hours, and platform/subscription breakdowns.
+      Primary executive dashboard.
+    depends_on:
+      - ref('daily_listening_stats')
+    owner:
+      name: Data Team
+
+  - name: top_tracks_dashboard
+    type: dashboard
+    maturity: high
+    # url: https://<your-lightdash-instance>/dashboards/<uuid>
+    description: >
+      Daily top 100 tracks with stream counts, unique listeners, artist info,
+      genre, release year, completion rate, and daily rank movement.
+    depends_on:
+      - ref('top_tracks_daily')
+    owner:
+      name: Data Team
+
+  - name: genre_trends_dashboard
+    type: dashboard
+    maturity: medium
+    # url: https://<your-lightdash-instance>/dashboards/<uuid>
+    description: >
+      Genre popularity over time: stream share, daily rank, listening hours,
+      and completion rate per genre.
+    depends_on:
+      - ref('genre_trends')
+    owner:
+      name: Data Team
+
+  - name: user_segments_dashboard
+    type: dashboard
+    maturity: medium
+    # url: https://<your-lightdash-instance>/dashboards/<uuid>
+    description: >
+      All-time user listening behaviour: subscription type breakdown,
+      country distribution, preferred platform/device, top genres,
+      and top-listener identification.
+    depends_on:
+      - ref('user_activity')
+    owner:
+      name: Data Team
